@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>New AI Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #0a0a0f;
+      color: #e8e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(99,102,241,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+    }
+
+    .glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+      top: -200px;
+      left: -200px;
+      z-index: 0;
+      animation: drift 8s ease-in-out infinite alternate;
+    }
+
+    .glow2 {
+      position: fixed;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 70%);
+      bottom: -100px;
+      right: -100px;
+      z-index: 0;
+      animation: drift2 10s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift {
+      from { transform: translate(0, 0); }
+      to   { transform: translate(100px, 100px); }
+    }
+
+    @keyframes drift2 {
+      from { transform: translate(0, 0); }
+      to   { transform: translate(-80px, -80px); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 720px;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      gap: 1rem;
+    }
+
+    /* header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      animation: fadeDown 0.5s ease both;
+    }
+
+    .header-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #6366f1;
+      box-shadow: 0 0 12px #6366f1;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #fff;
+    }
+
+    .header span {
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+      margin-left: auto;
+      font-weight: 300;
+    }
+
+    /* chat box */
+    .chatbox {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(99,102,241,0.3) transparent;
+    }
+
+    /* messages */
+    .message {
+      display: flex;
+      gap: 10px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      font-family: 'Syne', sans-serif;
+    }
+
+    .avatar.ai {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+    }
+
+    .avatar.user {
+      background: linear-gradient(135deg, #ec4899, #f43f5e);
+      color: white;
+    }
+
+    .bubble {
+      max-width: 75%;
+      padding: 0.75rem 1rem;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    .message.ai .bubble {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-top-left-radius: 4px;
+      color: #e8e8f0;
+    }
+
+    .message.user .bubble {
+      background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.3));
+      border: 1px solid rgba(99,102,241,0.3);
+      border-top-right-radius: 4px;
+      color: #fff;
+    }
+
+    /* typing indicator */
+    .typing .bubble {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0.75rem 1rem;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.7);
+      animation: bounce 1.2s infinite;
+    }
+
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    /* welcome message */
+    .welcome {
+      text-align: center;
+      padding: 2rem 0;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .welcome h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .welcome p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.3);
+      font-weight: 300;
+    }
+
+    /* input area */
+    .input-area {
+      display: flex;
+      gap: 8px;
+      padding: 0.75rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      animation: fadeUp 0.5s ease 0.2s both;
+    }
+
+    .input-area input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: #fff;
+      padding: 4px 8px;
+    }
+
+    .input-area input::placeholder { color: rgba(255,255,255,0.2); }
+
+    .send-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, opacity 0.15s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover { transform: scale(1.05); }
+    .send-btn:active { transform: scale(0.95); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .send-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: white;
+    }
+  </style>
+</head>
+<body>
+
+<div class="glow"></div>
+<div class="glow2"></div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-dot"></div>
+    <h1>AI CHAT TO GUIDE YOU</h1>
+    <span>Powered by Groq + LLaMA</span>
+  </div>
+
+  <div class="chatbox" id="chatbox">
+    <div class="welcome">
+      <h2>Hello there!</h2>
+      <p>Ask me anything — I am here to help you learn.</p>
+      <p>Lets Get Started</p>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="input" placeholder="Ask me anything..." />
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  const chatbox = document.getElementById("chatbox");
+  const input = document.getElementById("input");
+  const sendBtn = document.getElementById("sendBtn");
+
+  input.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") sendMessage();
+  });
+
+  function addMessage(text, role) {
+    const msg = document.createElement("div");
+    msg.className = `message ${role}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = `avatar ${role}`;
+    avatar.textContent = role === "ai" ? "AI" : "ME";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    chatbox.appendChild(msg);
+    chatbox.scrollTop = chatbox.scrollHeight;
+    return msg;
+  }
+
+  function addTyping() {
+    const msg = document.createElement("div");
+    msg.className = "message ai typing";
+    msg.id = "typing";
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar ai";
+    avatar.textContent = "AI";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    chatbox.appendChild(msg);
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById("typing");
+    if (t) t.remove();
+  }
+
+  async function sendMessage() {
+    const question = input.value.trim();
+    if (!question) return;
+
+    const welcome = document.querySelector(".welcome");
+    if (welcome) welcome.remove();
+
+    addMessage(question, "user");
+    input.value = "";
+    sendBtn.disabled = true;
+    addTyping();
+
+    try {
+      const res = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+
+      const data = await res.json();
+      removeTyping();
+      addMessage(data.answer, "ai");
+
+    } catch (e) {
+      removeTyping();
+      addMessage("Error: " + e.message, "ai");
+    }
+
+    sendBtn.disabled = false;
+    input.focus();
+  }
+</script>
+
+</body>
+</html>
